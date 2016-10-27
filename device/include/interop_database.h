@@ -109,6 +109,9 @@ static const interop_addr_t interop_addr_database[] = {
 
   // Fiat Carkit
   {{0x00, 0x14, 0x09,       0,0,0}, 3, INTEROP_INCREASE_AG_CONN_TIMEOUT},
+
+  // Aukey
+  {{0x00, 0x40, 0x00,       0,0,0}, 3, INTEROP_DISABLE_ABSOLUTE_VOLUME},
 };
 
 static const interop_name_t interop_name_database[] = {
