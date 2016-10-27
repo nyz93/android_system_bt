@@ -444,8 +444,10 @@ void handle_rc_ctrl_features(int index)
         int rc_features = 0;
         bdcpy(rc_addr.address, btif_rc_cb[index].rc_addr);
 
+
         if ((btif_rc_cb[index].rc_features & BTA_AV_FEAT_ADV_CTRL)&&
-             (btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCCT))
+             (btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCCT)&&
+             (!interop_addr_match(INTEROP_DISABLE_ABSOLUTE_VOLUME, &rc_addr)))
         {
             rc_features |= BTRC_FEAT_ABSOLUTE_VOLUME;
         }
@@ -476,9 +478,12 @@ void handle_rc_features(int index)
         bdcpy(rc_addr.address, btif_rc_cb[index].rc_addr);
         avdtp_addr = btif_av_get_addr(btif_rc_cb[index].rc_addr);
 
+		const char* rc_str = bdaddr_to_string(&rc_addr, &addr2, sizeof(bdstr_t));
         BTIF_TRACE_DEBUG("AVDTP Address : %s AVCTP address: %s",
                          bdaddr_to_string(&avdtp_addr, &addr1, sizeof(bdstr_t)),
-                         bdaddr_to_string(&rc_addr, &addr2, sizeof(bdstr_t)) );
+						 rc_str
+						 );
+		bool canAbsVol = !interop_addr_match(INTEROP_DISABLE_ABSOLUTE_VOLUME, &rc_addr);
 
         if (bdcmp(avdtp_addr.address, rc_addr.address))
         {
@@ -489,9 +494,12 @@ void handle_rc_features(int index)
         {
             rc_features |= BTRC_FEAT_BROWSE;
         }
-        if ( (btif_rc_cb[index].rc_features & BTA_AV_FEAT_ADV_CTRL) &&
-            (btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCTG))
+        if ((btif_rc_cb[index].rc_features & BTA_AV_FEAT_ADV_CTRL) &&
+            (btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCTG) &&
+             canAbsVol)
         {
+
+			BTIF_TRACE_DEBUG("Address : %s has BTRC_FEAT_ABSOLUTE_VOLUME!", rc_str);
            rc_features |= BTRC_FEAT_ABSOLUTE_VOLUME;
         }
         if (btif_rc_cb[index].rc_features & BTA_AV_FEAT_METADATA)
@@ -517,7 +525,8 @@ void handle_rc_features(int index)
                          btif_rc_cb[index].rc_vol_label);
         // Register for volume change on connect
         if (btif_rc_cb[index].rc_features & BTA_AV_FEAT_ADV_CTRL &&
-            btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCTG)
+            btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCTG &&
+			canAbsVol)
         {
             rc_transaction_t *p_transaction=NULL;
             bt_status_t status = BT_STATUS_NOT_READY;
@@ -3613,8 +3622,11 @@ static bt_status_t set_volume(uint8_t volume, bt_bdaddr_t *bd_addr)
         return status;
     }
 
+	bool canAbsVol = !interop_addr_match(INTEROP_DISABLE_ABSOLUTE_VOLUME, bd_addr);
+
     if ((btif_rc_cb[index].rc_features & BTA_AV_FEAT_RCTG) &&
-        (btif_rc_cb[index].rc_features & BTA_AV_FEAT_ADV_CTRL))
+        (btif_rc_cb[index].rc_features & BTA_AV_FEAT_ADV_CTRL) &&
+		canAbsVol)
     {
         tAVRC_COMMAND avrc_cmd = {0};
         BT_HDR *p_msg = NULL;
